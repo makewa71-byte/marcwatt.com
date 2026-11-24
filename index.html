@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#10131b">
+  <title>Marc Watt Neural Lab</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0c0f16;--panel:#151b27;--line:#293244;--muted:#9ba8bb;--text:#f3f6fb;--accent:#ff5a36;--blue:#63b3ff}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% 0%,#1d2a3c 0,transparent 42%),var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+    header{padding:28px 20px 18px;max-width:1100px;margin:auto} .eyebrow{color:var(--blue);font-size:.75rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700}
+    h1{font-size:clamp(2rem,7vw,3.6rem);line-height:1.03;margin:9px 0}header p{color:var(--muted);max-width:650px;margin:12px 0 0}
+    main{max-width:1100px;margin:auto;padding:10px 20px 50px}.status{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:.88rem;margin:12px 0 22px}
+    .dot{width:9px;height:9px;border-radius:50%;background:#e0a33c;box-shadow:0 0 12px #e0a33c}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+    .card{background:linear-gradient(145deg,#192130,#121722);border:1px solid var(--line);border-radius:17px;padding:18px;min-height:180px}
+    .icon{font-size:1.7rem}.card h2{font-size:1.08rem;margin:8px 0 5px}.card p{color:var(--muted);font-size:.9rem;margin:0 0 15px}
+    button,.filelabel{border:1px solid #40516a;background:#202c3d;color:var(--text);border-radius:10px;padding:10px 13px;font:inherit;font-size:.88rem;cursor:pointer}
+    button.primary{background:var(--accent);border-color:var(--accent);font-weight:700;color:#160c09}
+    button:disabled{opacity:.5;cursor:not-allowed}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+    .console{background:#090c12;border:1px solid var(--line);border-radius:14px;padding:15px;margin-top:20px}
+    .console h2{font-size:1rem;margin:0 0 8px}.log{white-space:pre-wrap;overflow-wrap:anywhere;color:#b9c8dc;font: .82rem/1.55 ui-monospace,SFMono-Regular,monospace;min-height:74px}
+    .note{color:var(--muted);font-size:.82rem;margin-top:15px}.hidden{display:none}input[type=file]{display:none}
+    footer{max-width:1100px;margin:auto;padding:0 20px 35px;color:#758196;font-size:.78rem}
+  </style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Private experimental workspace</div>
+  <h1>Marc Watt<br><span style="color:var(--accent)">Neural Lab</span></h1>
+  <p>A phone-friendly control room for testing machine-learning tools. The Android device handles the interface; remote services can do the heavy computation.</p>
+</header>
+<main>
+  <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Backend not connected — local demo mode</span></div>
+  <section class="grid">
+    <article class="card"><div class="icon">🖼️</div><h2>Image Intelligence</h2><p>Upload an image for server-side classification, object detection or visual analysis.</p><button data-module="image">Open module</button></article>
+    <article class="card"><div class="icon">🎙️</div><h2>Audio Intelligence</h2><p>Prepare recordings for transcription, sound classification and audio experiments.</p><button data-module="audio">Open module</button></article>
+    <article class="card"><div class="icon">🧠</div><h2>Model Workshop</h2><p>Run experiments, compare model outputs and eventually train custom networks.</p><button data-module="models">Open module</button></article>
+    <article class="card"><div class="icon">📝</div><h2>Text Intelligence</h2><p>Analyze, classify, summarize and search text using remote language models.</p><button data-module="text">Open module</button></article>
+  </section>
+  <div class="toolbar">
+    <label class="filelabel" for="upload">Choose a test file</label><input id="upload" type="file" accept="image/*,audio/*,.txt,.pdf,.csv">
+    <button class="primary" id="check">Check server connection</button>
+  </div>
+  <div class="console"><h2>Lab console</h2><div class="log" id="log">Ready. Choose a module or check the server connection.\nNo file is uploaded until a backend is configured.</div></div>
+  <p class="note">Prototype note: this first screen is a safe front-end shell. It does not pretend to run neural networks locally. The next stage connects authenticated API endpoints and a separate GPU inference service.</p>
+</main>
+<footer>Marc Watt Neural Lab · Experimental build 0.1</footer>
+<script>
+  // Set this to your deployed Cloudflare Worker URL after deployment.
+  const API_BASE = "";
+  const log = (s) => document.getElementById("log").textContent = s;
+  document.querySelectorAll("[data-module]").forEach(btn => btn.addEventListener("click", () => {
+    const names = {image:"Image Intelligence",audio:"Audio Intelligence",models:"Model Workshop",text:"Text Intelligence"};
+    log(names[btn.dataset.module] + " selected.\nNext: connect this module to its authenticated server-side processing endpoint.");
+  }));
+  document.getElementById("upload").addEventListener("change", e => {
+    const f=e.target.files[0]; if(f) log(`Selected: ${f.name}\nSize: ${(f.size/1024/1024).toFixed(2)} MB\nType: ${f.type || "unknown"}\nNot uploaded. Backend connection and authentication are required first.`);
+  });
+  document.getElementById("check").addEventListener("click", async () => {
+    if(!API_BASE){log("No API URL configured yet.\nDeploy worker/worker.js, then set API_BASE in this file to your Worker URL.");return;}
+    try{
+      const r=await fetch(`${API_BASE}/health`);
+      const data=await r.json();
+      document.getElementById("statusText").textContent="Backend connected";
+      document.getElementById("statusDot").style.background="#4bd18a";
+      log("Server response:\n"+JSON.stringify(data,null,2));
+    }catch(err){log("Connection failed: "+err.message);}
+  });
+</script>
+</body>
+</html>
